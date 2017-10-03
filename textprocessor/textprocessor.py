@@ -4,6 +4,9 @@ class TextProcessor:
     '''
     Text processor class.
 
+    tp = TextProcessor(string)
+    tp = TextProcessor.from_file(file_path)
+
     Words tags:
         ADJ 	adjective 	            new, good, high, special, big, local
         ADP 	adposition 	            on, of, at, with, by, into, under
@@ -23,12 +26,13 @@ class TextProcessor:
         self._raw_text = s
         # this is a pre-traned Punkt sentence tokenizer (see http://www.nltk.org/api/nltk.tokenize.html#module-nltk.tokenize.punkt)
         self.sentences = nltk.sent_tokenize(self._raw_text)
+        self.sentences = [nltk.word_tokenize(w.lower()) for w in self.sentences]
+        self.tagged_sentences = [nltk.pos_tag(s) for s in self.sentences]
         self.lwords = []
         for s in self.sentences:
-            self.lwords.extend([w.lower() for w in nltk.word_tokenize(s)])
+            self.lwords.extend([w for w in s])
         
         self._fdist = None
-        self.tagged_words = nltk.pos_tag(self.lwords)
         self.text = nltk.Text(self.lwords)
 
     def from_file(f_path):
@@ -117,3 +121,14 @@ class TextProcessor:
             words = [w for w in words if w not in stopwords]
 
         return words
+
+    def get_chunks(self, grammar, evaluate=False):
+        cp = nltk.RegexpParser(grammar)
+        if evaluate:
+            test_data = nltk.corpus.conll2000.chunked_sents('test.txt', chunk_types=['NP'])
+            print('EVALUTATION:', cp.evaluate(test_data))
+        chunks = []
+        for s in self.tagged_sentences:
+            chunks.append(cp.parse(s))
+
+        return chunks
