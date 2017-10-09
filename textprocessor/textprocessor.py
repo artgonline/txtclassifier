@@ -1,4 +1,8 @@
 import nltk
+import string
+
+# from . import conchunker
+import conchunker
 
 class TextProcessor:
     '''
@@ -36,7 +40,7 @@ class TextProcessor:
         self.text = nltk.Text(self.lwords)
 
     def from_file(f_path):
-        with open(f_path) as f:
+        with open(f_path, encoding='utf8') as f:
             return TextProcessor(f.read())
 
     def _get_words_freq_dist(self, wlist=None):
@@ -57,33 +61,35 @@ class TextProcessor:
             return 0
         return len(set(self.lwords)) / len(self.lwords)
 
-    def word_freq(self, w, stemmer=None, lemmatise=False):
+    def word_freq(self, w, words=None, stemmer=None, lemmatise=False):
         '''
         Returns the frequency of given word.
         If stemmer argument is provided, the stemmer will be applied to words and
         frequency distribution will be calculated based on the stemmer output.
         '''
-        if self.lwords == None:
-            return 0
+        if words == None:
+            if self.lwords == None:
+                return 0
 
-        words = None
+            words = self.lwords[:]
+
         if stemmer != None and isinstance(stemmer, nltk.stem.api.StemmerI):
-            words = [stemmer.stem(word) for word in self.lwords]
+            words = [stemmer.stem(word) for word in words]
         if lemmatise:
             lemmatiser = nltk.stem.WordNetLemmatizer()
-            if words == None:
-                words = self.lwords[:]
             words = [lemmatiser.lemmatize(word) for word in words]
 
         fdist = self._get_words_freq_dist(words)
         return fdist[w]
 
-    def most_common_words(self, n=None):
+    def most_common_words(self, words=None, n=None):
         '''Wrapper for nltk.FreqDist.most_common'''
-        if self.lwords == None:
-            return 0
+        if words == None:
+            if self.lwords == None:
+                return 0
+            words = self.lwords
 
-        fd = self._get_words_freq_dist()
+        fd = self._get_words_freq_dist(words)
         if n == None:
             n = len(self.lwords)
         return fd.most_common(n)
@@ -110,7 +116,7 @@ class TextProcessor:
             return []
         return self.text.collocations()
 
-    def get_filtered_words(self, nostopwords=False, lang='english'):
+    def get_filtered_words(self, nostopwords=False, nopunct=False, lang='english'):
         if self.lwords == None:
             return []
 
@@ -120,9 +126,12 @@ class TextProcessor:
             stopwords = set(nltk.corpus.stopwords.words(lang))
             words = [w for w in words if w not in stopwords]
 
+        if nopunct:
+            words = [w for w in words if all(c not in string.punctuation for c in w)]
+
         return words
 
-    def get_chunks(self, grammar, evaluate=False):
+    def get_chunks_for_grammar(self, grammar, evaluate=False):
         cp = nltk.RegexpParser(grammar)
         if evaluate:
             test_data = nltk.corpus.conll2000.chunked_sents('test.txt', chunk_types=['NP'])
@@ -132,3 +141,26 @@ class TextProcessor:
             chunks.append(cp.parse(s))
 
         return chunks
+
+    def train_chunker(self, train_sents, pickle_name, evaluate=True):
+        if train_sents == None:
+            train_sents = nltk.corpus.conll2000.chunked_sents('train.txt', chunk_types=['NP'])
+        chunker = conchunker.ConsecutiveNPChunker(train_sents, save=True)
+
+        if evaluate:
+            test_data = nltk.corpus.conll2000.chunked_sents('test.txt', chunk_types=['NP'])
+            print('EVALUTATION:', chunker.evaluate(test_data))
+
+
+    def get_np_chunks(self, evaluate=False):
+        if self.tagged_sentences == None:
+            return None
+
+        chunker = conchunker.ConsecutiveNPChunker()
+
+        if evaluate:
+            test_data = nltk.corpus.conll2000.chunked_sents('test.txt', chunk_types=['NP'])
+            print('EVALUTATION:', chunker.evaluate(test_data))
+
+        return [chunker.parse(s) for s in self.tagged_sentences]
+
