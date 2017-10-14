@@ -1,3 +1,4 @@
+from collections import Counter
 import nltk
 import string
 
@@ -24,7 +25,7 @@ class TextProcessor:
         VERB 	verb 	                is, say, told, given, playing, would
         . 	    punctuation marks 	    . , ; !
         X 	    other 	                ersatz, esprit, dunno, gr8, univeristy
-'''
+    '''
 
     def __init__(self, s):
         self._raw_text = s
@@ -43,6 +44,16 @@ class TextProcessor:
         with open(f_path, encoding='utf8') as f:
             return TextProcessor(f.read())
 
+    def _get_np_phrases(self,):
+        get_np_trees = lambda tree: list(tree.subtrees(filter=lambda t: t.label() == 'NP'))
+        np_trees = [t for tree in self.get_np_chunks() for t in get_np_trees(tree)]
+        return TextProcessor.generate_phrases_from_trees(np_trees)
+
+    def _get_most_commont_nouns(self, noun_tags, n=10):
+        nouns = [w[0] for s in self.tagged_sentences for w in s if w[1] in noun_tags]
+        min_freq = min([w[1] for w in self.most_common_words(words=nouns, n=n)])
+        return [w[0] for w in self.most_common_words(words=nouns) if w[1] >= min_freq]
+
     def _get_words_freq_dist(self, wlist=None):
         '''
         Returns FreqDist object for provided list of words,
@@ -54,6 +65,17 @@ class TextProcessor:
         if self._fdist == None:
             self._fdist = nltk.FreqDist(self.lwords)
         return self._fdist
+
+    @staticmethod
+    def generate_phrases_from_trees(trees, excl_tags=['POS', 'DT']):
+        phs = set()
+        for t in trees:
+            leaves = [l[0] for l in t.leaves() 
+                      if not any([c in string.punctuation for c in l[1]]) 
+                          and l[1] not in excl_tags]
+            # yield ' '.join(leaves)
+            phs.add(' '.join(leaves))
+        return phs
 
     def lex_divercity(self,):
         '''Lexical richness of the text, i.e. how many new words are used.'''
@@ -116,11 +138,22 @@ class TextProcessor:
             return []
         return self.text.collocations()
 
-    def get_filtered_words(self, nostopwords=False, nopunct=False, lang='english'):
+    def get_filtered_words(self, nostopwords=False, nopunct=False,
+                           stemm=False, lemmatize=False, lang='english'):
         if self.lwords == None:
             return []
 
         words = self.lwords[:]
+
+        if lemmatize:
+            # Apply WordNetLemmatizer first
+            wnl = nltk.WordNetLemmatizer()
+            words = [wnl.lemmatize(w) for w in words]
+
+        if stemm:
+            # Apply PorterStemmer
+            stemmer = nltk.PorterStemmer()
+            words = [stemmer.stem(w) for w in words]
 
         if nostopwords:
             stopwords = set(nltk.corpus.stopwords.words(lang))
@@ -164,3 +197,19 @@ class TextProcessor:
 
         return [chunker.parse(s) for s in self.tagged_sentences]
 
+    def get_most_common_phrases(self, n=10, noun_tags = ['NN', 'NNS']):
+        '''
+        Extracts NP phrases from the text and return the most reaccuring 
+        phrases and their frequency.
+        '''
+        # Get all noun phrases from the text
+        phrases = self._get_np_phrases()
+        # Get most used nouns
+        most_common_nouns = self._get_most_commont_nouns(noun_tags)
+
+        cnt = Counter()
+        for nn in most_common_nouns:
+            for p in phrases:
+                if nn in p:
+                    cnt[p] += 1
+        return cnt.most_common(n)

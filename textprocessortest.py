@@ -20,9 +20,9 @@ tp = TextProcessor.from_file(r'd:\repos\txtclassifier\textprocessor\data\news.tx
 # print(tp.get_chunks(r"NP: {<[CDJNP].*>+}", True)[0][0])
 # print(tp.get_np_chunks(True))
 # tp.train_chunker(None, None)
-VERBS = ["VB","VBD","VBG","VBN", "VBP", "VBZ"]
-chunks = tp.get_np_chunks()
-svos = []
+# VERBS = ["VB","VBD","VBG","VBN", "VBP", "VBZ"]
+# chunks = tp.get_np_chunks()
+# svos = []
 # for sent in chunks:
     # q = Queue()
     # s = []
@@ -34,4 +34,4 @@ svos = []
     # svos.append(svo)
 
 # print(svos[0])
-print(chunks[0])
+print(tp.get_most_common_phrases(noun_tags=['NN']))
