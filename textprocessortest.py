@@ -34,4 +34,22 @@ tp = TextProcessor.from_file(r'd:\repos\txtclassifier\textprocessor\data\news.tx
     # svos.append(svo)
 
 # print(svos[0])
-print(tp.get_most_common_phrases(noun_tags=['NN']))
+# print(tp.get_most_common_phrases(noun_tags=['NN']))
+
+# train_data = nltk.corpus.treebank_chunk.chunked_sents()[:3200]
+# test_data = nltk.corpus.treebank_chunk.chunked_sents()[3200:]
+# tp.train_chunker(train_data, pickle_name='cnp_chunker_treebank.pickle', evaluate=True, test_data=test_data)
+
+# tp_treebank = TextProcessor.from_file(r'd:\repos\txtclassifier\textprocessor\data\news.txt',
+                                      # chunker='cnp_chunker_treebank.pickle')
+# tp_treebank.get_np_chunks(evaluate=True)
+# tp.get_np_chunks(evaluate=True)
+
+data = list()
+data.extend(nltk.corpus.conll2000.chunked_sents('train.txt', chunk_types=['NP']))
+data.extend(nltk.corpus.conll2000.chunked_sents('test.txt', chunk_types=['NP']))
+data.extend(nltk.corpus.treebank_chunk.chunked_sents())
+print(len(data))
+train_data = nltk.corpus.treebank_chunk.chunked_sents()[:13500]
+test_data = nltk.corpus.treebank_chunk.chunked_sents()[13500:]
+tp.train_chunker(train_data, pickle_name='cnp_chunker_comb.pickle', evaluate=True, test_data=test_data)

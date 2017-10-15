@@ -2,8 +2,8 @@ from collections import Counter
 import nltk
 import string
 
-# from . import conchunker
-import conchunker
+from . import conchunker
+# import conchunker
 
 class TextProcessor:
     '''
@@ -27,8 +27,9 @@ class TextProcessor:
         X 	    other 	                ersatz, esprit, dunno, gr8, univeristy
     '''
 
-    def __init__(self, s):
+    def __init__(self, s, chunker='cnp_chunker.pickle'):
         self._raw_text = s
+        self.chunker_name = chunker
         # this is a pre-traned Punkt sentence tokenizer (see http://www.nltk.org/api/nltk.tokenize.html#module-nltk.tokenize.punkt)
         self.sentences = nltk.sent_tokenize(self._raw_text)
         self.sentences = [nltk.word_tokenize(w.lower()) for w in self.sentences]
@@ -40,9 +41,9 @@ class TextProcessor:
         self._fdist = None
         self.text = nltk.Text(self.lwords)
 
-    def from_file(f_path):
+    def from_file(f_path, chunker='cnp_chunker.pickle'):
         with open(f_path, encoding='utf8') as f:
-            return TextProcessor(f.read())
+            return TextProcessor(f.read(), chunker)
 
     def _get_np_phrases(self,):
         get_np_trees = lambda tree: list(tree.subtrees(filter=lambda t: t.label() == 'NP'))
@@ -175,13 +176,14 @@ class TextProcessor:
 
         return chunks
 
-    def train_chunker(self, train_sents, pickle_name, evaluate=True):
+    def train_chunker(self, train_sents, pickle_name='cnp_chunker.pickle', evaluate=True, test_data=None):
         if train_sents == None:
             train_sents = nltk.corpus.conll2000.chunked_sents('train.txt', chunk_types=['NP'])
-        chunker = conchunker.ConsecutiveNPChunker(train_sents, save=True)
+        chunker = conchunker.ConsecutiveNPChunker(train_sents, pickle_name=pickle_name, save=True)
 
         if evaluate:
-            test_data = nltk.corpus.conll2000.chunked_sents('test.txt', chunk_types=['NP'])
+            if test_data == None:
+                test_data = nltk.corpus.conll2000.chunked_sents('test.txt', chunk_types=['NP'])
             print('EVALUTATION:', chunker.evaluate(test_data))
 
 
@@ -189,7 +191,7 @@ class TextProcessor:
         if self.tagged_sentences == None:
             return None
 
-        chunker = conchunker.ConsecutiveNPChunker()
+        chunker = conchunker.ConsecutiveNPChunker(pickle_name=self.chunker_name)
 
         if evaluate:
             test_data = nltk.corpus.conll2000.chunked_sents('test.txt', chunk_types=['NP'])
