@@ -4,7 +4,14 @@ import pickle
 
 
 class ConsecutiveNPChunkTagger(nltk.TaggerI):
-
+    '''
+    Create IOB tagget text based on POS tagged input data.
+    Uses MaxentClassifier model. Extracts a number of features from the POS tagged text,
+    Inculding:
+        previous word tag
+        next word tag
+        different combinations of previos and current tags (see function doc string for more detail.)
+    '''
     def __init__(self, train_sents=None, pickle_name=None, save=False):
         '''Trains new tagger model or loads existing one.''' 
         self._pickle_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pickles', pickle_name)
@@ -37,6 +44,17 @@ class ConsecutiveNPChunkTagger(nltk.TaggerI):
         return zip(sentence, history)
 
     def npchunk_features(self, sentence, i, history):
+        '''
+        Extracts features from POS tagged sentence.
+        Returns a dictionary of the following features:
+            pos             current word POS tag
+            word            current word
+            prevpos         previous word POS tag
+            nextpos         next word POS tag
+            prevpos+pos     previous and current words POS  tags combined
+            pos+nextpos     current and next words POS tags combined
+            tags-since-dt   all tags since last determiner or beggining of sentence. 
+        '''
         try:
             word, pos = sentence[i]
         except ValueError:

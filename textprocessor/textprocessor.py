@@ -2,8 +2,8 @@ from collections import Counter
 import nltk
 import string
 
-from . import conchunker
-# import conchunker
+# from . import conchunker
+import conchunker
 
 class TextProcessor:
     '''
@@ -68,7 +68,7 @@ class TextProcessor:
         return self._fdist
 
     @staticmethod
-    def generate_phrases_from_trees(trees, excl_tags=['POS', 'DT']):
+    def generate_phrases_from_trees(trees, excl_tags=['POS', 'DT', 'PRP$']):
         phs = set()
         for t in trees:
             leaves = [l[0] for l in t.leaves() 
