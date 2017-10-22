@@ -199,7 +199,7 @@ class TextProcessor:
 
         return [chunker.parse(s) for s in self.tagged_sentences]
 
-    def get_most_common_phrases(self, n=10, noun_tags = ['NN', 'NNS']):
+    def get_most_common_phrases(self, n=10, noun_tags = ['NN', 'NNS'], filter_words=None):
         '''
         Extracts NP phrases from the text and return the most reaccuring 
         phrases and their frequency.
@@ -207,10 +207,11 @@ class TextProcessor:
         # Get all noun phrases from the text
         phrases = self._get_np_phrases()
         # Get most used nouns
-        most_common_nouns = self._get_most_commont_nouns(noun_tags)
+        if filter_words == None:
+            filter_words = self._get_most_commont_nouns(noun_tags)
 
         cnt = Counter()
-        for nn in most_common_nouns:
+        for nn in filter_words:
             for p in phrases:
                 if nn in p:
                     cnt[p] += 1
